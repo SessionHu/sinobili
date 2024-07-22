@@ -1,13 +1,29 @@
 package org.sessx.sinobili;
 
 import java.io.File;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 
-import org.sessx.sinobili.bili.User;
+import org.jline.reader.LineReader;
+import org.jline.reader.LineReaderBuilder;
+import org.jline.terminal.Terminal;
+import org.jline.terminal.TerminalBuilder;
+import org.sessx.sinobili.bili.BiliSign;
 import org.sessx.sinobili.bili.Video;
 import org.sessx.sinobili.util.Logger;
 
+import com.google.gson.JsonObject;
+
+/**
+ * Main class of SinoBili.
+ */
 public class Main {
 
+    /**
+     * Base directory of SinoBili.
+     */
     public static final File BASE_DIR;
     static {
         BASE_DIR = new File(System.getProperty("user.home") + "/.sessx/sinobili");
@@ -23,23 +39,107 @@ public class Main {
         return logger;
     }
 
+    private Main() {} // no instance
+
+    private static void printHelp() {
+        String str = 
+                "avaliable commands:\n" +
+                "  video <aid | bvid> - get video info\n" +
+                "  wbi                - update wbi sign keys\n" +
+                "  biliticket [csrf]  - get bili ticket, 'csrf' is optional\n" +
+                "  clear              - clear screen\n" +
+                "  help               - show help\n" +
+                "  exit               - exit program\n";
+        logger().log(1, str);
+    }
+
+    /**
+     * main method
+     * 
+     * @param args command line arguments
+     */
     public static void main(String[] args) {
+        // welcome
         logger().log(1, "Welcome to SinoBili!");
         try {
-            logger().log(1, example());
+            // init terminal
+            Terminal terminal = TerminalBuilder.builder().system(true).build();
+            LineReader reader = LineReaderBuilder.builder().terminal(terminal).build();
+            String line;
+            // loop
+            while (true) {
+                // read line
+                try {
+                    line = reader.readLine("SinoBili> ");
+                } catch (org.jline.reader.EndOfFileException e) {
+                    // ^D
+                    line = "exit";
+                } catch (org.jline.reader.UserInterruptException e) {
+                    // ^C
+                    continue;
+                }
+                // parse
+                String[] tokens = line.split("\\s+");
+                if (tokens.length == 2 && tokens[0].equals("video")) {
+                    logger().log(1, basicVideoInfo(tokens[1]));
+                } else if (tokens.length == 1 && tokens[0].equals("wbi")) {
+                    BiliSign.clearMixinKeyCache();
+                    BiliSign.wbiSign(new JsonObject());
+                    logger().log(1, "wbi sign keys updated");
+                } else if (tokens.length > 0 && tokens.length < 3 && tokens[0].equals("biliticket")) {
+                    String csrf = tokens.length == 2 ? tokens[1] : "";
+                    String ticket = BiliSign.getBiliTicket(csrf);
+                    logger().log(1, "bili ticket: " + ticket);
+                } else if (tokens.length == 1 && tokens[0].equals("clear")) {
+                    terminal.puts(org.jline.utils.InfoCmp.Capability.clear_screen);
+                } else if (tokens.length == 1 && tokens[0].equals("help")) {
+                    printHelp();
+                } else if (tokens.length == 1 && tokens[0].equals("exit")) {
+                    logger().log(1, "bye!");
+                    break;
+                } else {
+                    logger().log(2, "unknown command '" + line + "'");
+                }
+            }
         } catch (Exception e) {
             logger().log(4, logger().xcpt2str(e));
         }
     }
 
-    public static String example() {
-        Video video = Video.fromAid(2);
-        byte aid = 2;
-        String title = video.getData().get("title").getAsString();
-        User user = video.getUploader();
-        String upname = user.getCard().get("card").getAsJsonObject().get("name").getAsString();
-        String upsign = user.getCard().get("card").getAsJsonObject().get("sign").getAsString();
-        return title + "\nav" + aid + "\n" + upname + "\n" + upsign;
+    /**
+     * get basic video info by aid or bvid
+     * @param aidOrBvid aid or bvid of the video
+     * @return basic video info
+     */
+    public static String basicVideoInfo(String aidOrBvid) {
+        // get
+        Video video;
+        if (aidOrBvid.toLowerCase().startsWith("av")) {
+            video = Video.fromAid(Long.parseLong(aidOrBvid.substring(2)));
+        } else if (aidOrBvid.toLowerCase().startsWith("bv") && aidOrBvid.length() == 12) {
+            video = Video.fromBvid(aidOrBvid);
+        } else if (aidOrBvid.matches("\\d+")) {
+            video = Video.fromAid(Long.parseLong(aidOrBvid));
+        } else {
+            throw new IllegalArgumentException("invalid aid or bvid: " + aidOrBvid);
+        }
+        // build
+        StringBuilder sb = new StringBuilder();
+        JsonObject videoData = video.getData();
+        // title
+        sb.append(videoData.get("title").getAsString()).append('\n');
+        // aid / bvid
+        sb.append("AV").append(videoData.get("aid").getAsLong()).append(" / ");
+        sb.append(videoData.get("bvid").getAsString()).append('\n');
+        // view danmaku pubdate
+        JsonObject stat = videoData.get("stat").getAsJsonObject();
+        sb.append("播放 ").append(stat.get("view").getAsLong()).append("  ");
+        sb.append("弹幕 ").append(stat.get("danmaku").getAsLong()).append("  ");
+        OffsetDateTime pubdate = OffsetDateTime.ofInstant(
+                Instant.ofEpochSecond(videoData.get("pubdate").getAsLong()), ZoneOffset.systemDefault());
+        sb.append(pubdate.format(DateTimeFormatter.ISO_DATE_TIME)).append('\n');
+        // return
+        return sb.toString();
     }
 
 }

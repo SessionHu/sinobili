@@ -2,8 +2,10 @@ package org.sessx.sinobili.bili;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.StringJoiner;
+
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 
 import org.sessx.sinobili.Main;
 import org.sessx.sinobili.net.HttpClient;
@@ -11,6 +13,9 @@ import org.sessx.sinobili.net.HttpRequest;
 
 import com.google.gson.JsonObject;
 
+/**
+ * Bilibili API sign methods.
+ */
 public class BiliSign {
 
     private static final byte[] MIXIN_KEY_ENC_TAB = {
@@ -23,13 +28,24 @@ public class BiliSign {
     private static String mixinKeyCache = null;
     private static long mixinKeyCacheTimeMillis = 0;
 
+    public static void clearMixinKeyCache() {
+        mixinKeyCache = null;
+        mixinKeyCacheTimeMillis = 0;
+    }
+
+    public static final String API_NAV_URL = "https://api.bilibili.com/x/web-interface/nav";
+
+    /**
+     * Get the mixin key from the Bilibili API.
+     * @return The mixin key as a string.
+     */
     private static String getMixinKey() {
-        // cache
-        if (mixinKeyCache!= null && System.currentTimeMillis() - mixinKeyCacheTimeMillis < 3600000) {
+        // cache (8 hour)
+        if (mixinKeyCache!= null && System.currentTimeMillis() - mixinKeyCacheTimeMillis < 8L * 3600000L) {
             return mixinKeyCache;
         }
         // get imgKey and subKey
-        JsonObject nav = APIRequest.get("https://api.bilibili.com/x/web-interface/nav").getAsJsonObject();
+        JsonObject nav = APIRequest.get(API_NAV_URL).getAsJsonObject();
         JsonObject wbiImg = nav.get("data").getAsJsonObject().get("wbi_img").getAsJsonObject();
         String imgUrl = wbiImg.get("img_url").getAsString();
         String imgKey = imgUrl.substring(imgUrl.lastIndexOf("/") + 1, imgUrl.lastIndexOf("."));
@@ -47,6 +63,11 @@ public class BiliSign {
         return mixinKeyCache;
     }
 
+    /**
+     * Sign a request to the Bilibili API using the Wbi Sign method.
+     * @param params The request parameters to sign.
+     * @return The signed request parameters.
+     */
     public static JsonObject wbiSign(JsonObject params) {
         // mixin key
         String mixinKey = getMixinKey();
@@ -64,12 +85,8 @@ public class BiliSign {
         try {
             MessageDigest md = MessageDigest.getInstance("MD5");
             byte[] md5 = md.digest(s.getBytes(StandardCharsets.UTF_8));
-            StringBuilder hex = new StringBuilder();
-            for (byte b : md5) {
-                hex.append(Integer.toHexString(0xff & b));
-            }
-            params.addProperty("w_rid", hex.toString());
-        } catch (NoSuchAlgorithmException e) {
+            params.addProperty("w_rid", bytesToHex(md5));
+        } catch (java.security.NoSuchAlgorithmException e) {
             Main.logger().log(3, Main.logger().xcpt2str(e));
         }
         params.addProperty("wts", copy.get("wts").getAsLong());
@@ -96,6 +113,90 @@ public class BiliSign {
         cookies.addProperty("buvid3", "3F681212-EA56-FB84-EACC-E634CD872D8A53844infoc");
         cookies.addProperty("buvid4", "6AA36083-722B-5229-A5D5-BACD43BAA83F53844-024072206-v5mYMm9dUeVGOADNkrbD6Q==");
         DEFAULT_COOKIES = cookies;
+    }
+
+    /**
+     * Generate a HMAC-SHA256 hash of the given message string using the given key
+     * string.
+     * 
+     * @param key     The key string to use for the HMAC-SHA256 hash.
+     * @param message The message string to hash.
+     * @return The HMAC-SHA256 hash of the given message string using the given key
+     *         string.
+     *         {@code null} if an error occurs during the hash generation.
+     */
+    public static String hmacSha256(String key, String message) {
+        try {
+            Mac mac = Mac.getInstance("HmacSHA256");
+            SecretKeySpec secretKeySpec = new SecretKeySpec(key.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+            mac.init(secretKeySpec);
+            byte[] hash = mac.doFinal(message.getBytes(StandardCharsets.UTF_8));
+            return bytesToHex(hash);
+        } catch (Exception e) {
+            Main.logger().log(3, Main.logger().xcpt2str(e));
+            return null;
+        }
+    }
+
+    /**
+     * Convert a byte array to a hex string.
+     * 
+     * @param bytes
+     * @return The hex string representation of the given byte array.
+     */
+    private static String bytesToHex(byte[] bytes) {
+        StringBuilder sb = new StringBuilder();
+        for (byte b : bytes) {
+            String hex = Integer.toHexString(0xff & b);
+            if (hex.length() == 1) {
+                sb.append('0');
+            }
+            sb.append(hex);
+        }
+        return sb.toString();
+    }
+    
+    public static final String API_GEN_WEB_TICKET = "https://api.bilibili.com/bapis/bilibili.api.ticket.v1.Ticket/GenWebTicket";
+
+    private static String biliTicketCache = null;
+    private static long biliTicketCacheTimeMillis = 0;
+    private static String biliCsrfCache = null;
+
+    /**
+     * Get a Bilibili web ticket for the given CSRF token.
+     * 
+     * @param csrf The CSRF token to use for the web ticket, can be {@code null} or
+     *             empty.
+     * @return The Bilibili web ticket for the given CSRF token.
+     * @see https://github.com/SocialSisterYi/bilibili-API-collect/blob/master/docs/misc/sign/bili_ticket.md
+     */
+    public static String getBiliTicket(String csrf) {
+        // cache (3 days)
+        if (biliTicketCache != null && System.currentTimeMillis() - biliTicketCacheTimeMillis < 259260000L
+                && (csrf == null || csrf.equals(biliCsrfCache))) {
+            return biliTicketCache;
+        }
+        // generate web ticket
+        long ts = System.currentTimeMillis() / 1000;
+        String hexSign = hmacSha256("XgwSnGZ1p", "ts" + ts);
+        JsonObject params = new JsonObject();
+        params.addProperty("key_id", "ec02");
+        params.addProperty("hexsign", hexSign);
+        params.addProperty("context[ts]", ts);
+        params.addProperty("csrf", csrf == null ? "" : csrf);
+        JsonObject response = APIRequest.post(API_GEN_WEB_TICKET, params).getAsJsonObject();
+        // add cache
+        biliTicketCacheTimeMillis = System.currentTimeMillis();
+        biliTicketCache = response.get("data").getAsJsonObject().get("ticket").getAsString();
+        biliCsrfCache = csrf;
+        // return
+        return biliTicketCache;
+    }
+
+    public static void clearBiliTicketCache() {
+        biliTicketCache = null;
+        biliTicketCacheTimeMillis = 0;
+        biliCsrfCache = null;
     }
 
 }

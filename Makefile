@@ -13,6 +13,11 @@ GSON_URL = https://repo1.maven.org/maven2/com/google/code/gson/gson/$(GSON_VER)/
 GSON_PATH = $(LIB_PATH)/gson-$(GSON_VER).jar
 GSON_TARGET = $(BUILD_DIR)/gsonok
 
+JLINE_VER = 3.26.3
+JLINE_URL = https://repo1.maven.org/maven2/org/jline/jline/$(JLINE_VER)/jline-$(JLINE_VER).jar
+JLINE_PATH = $(LIB_PATH)/jline-$(JLINE_VER).jar
+JLINE_TARGET = $(BUILD_DIR)/jlineok
+
 JAVAC = javac
 JAVAC_FLAGS = -d $(BUILD_BIN) -sourcepath $(SRC_DIR) -cp $(BUILD_BIN)
 
@@ -40,8 +45,20 @@ $(GSON_TARGET):
 	unzip -o $(GSON_PATH) -d $(BUILD_BIN)
 	touch $(GSON_TARGET)
 
+# jline download
+$(JLINE_PATH):
+	mkdir -p $(LIB_PATH)
+	wget -O $(JLINE_PATH) $(JLINE_URL)
+	rm -f $(JLINE_TARGET)
+
+# jline unzip
+$(JLINE_TARGET):
+	mkdir -p $(BUILD_BIN)
+	unzip -o $(JLINE_PATH) -d $(BUILD_BIN)
+	touch $(JLINE_TARGET)
+
 # libs
-lib: $(GSON_PATH) $(GSON_TARGET)
+lib: $(GSON_PATH) $(GSON_TARGET) $(JLINE_PATH) $(JLINE_TARGET)
 
 # javac
 $(BUILD_BIN)/%.class: $(SRC_DIR)/%.java

@@ -18,6 +18,11 @@ public class HttpResponse {
         this.conn.connect();
     }
 
+    /**
+     * Get the response body as a byte array.
+     * @return the response body as a byte array.
+     * @throws IOException if an I/O error occurs.
+     */
     public byte[] bytes() throws IOException {
         InputStream in = this.conn.getInputStream();
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -29,12 +34,25 @@ public class HttpResponse {
         return baos.toByteArray();
     }
 
+    /**
+     * Get the response body as a string.
+     * @return the response body as a string.
+     * @throws IOException if an I/O error occurs.
+     */
     public String text() throws IOException {
         return new String(this.bytes(), StandardCharsets.UTF_8);
     }
 
+    /**
+     * Default Gson instance for JSON parsing.
+     */
     public static Gson GSON = new Gson();
 
+    /**
+     * Get the response body as a JSON element.
+     * @return the response body as a JSON element.
+     * @throws IOException if an I/O error occurs.
+     */
     public JsonElement json() throws IOException {
         return GSON.fromJson(this.text(), JsonElement.class);
     }

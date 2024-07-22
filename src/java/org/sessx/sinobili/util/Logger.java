@@ -21,6 +21,10 @@ public class Logger {
 
     private Writer out;
 
+    /**
+     * Get a logger instance.
+     * @return a logger instance.
+     */
     public static Logger get() {
         File dir = new File(Main.BASE_DIR, "logs");
         File latest = new File(dir, "latest.log");
@@ -62,6 +66,11 @@ public class Logger {
     private static final String[] LEVELS = {"DEBUG", "INFO", "WARN", "ERROR", "FATAL"};
     private static final String[] COLORS = {"\033[36m", "\033[0m", "\033[93m", "\033[31m", "\033[91;1m"};
 
+    /**
+     * Log a message.
+     * @param level the log level (0-4). 0=DEBUG, 1=INFO, 2=WARN, 3=ERROR, 4=FATAL. Default is 0.
+     * @param text the message text.
+     */
     public void log(int level, String text) {
         // check
         if (level < 0 || level >= LEVELS.length) level = 0;
@@ -95,6 +104,13 @@ public class Logger {
         }
     }
 
+    /**
+     * Convert an {@link Throwable} to a string.
+     * Format with 4 spaces for each level of the stack trace.
+     * 
+     * @param t the {@link Throwable} to convert.
+     * @return the string representation of the {@link Throwable} and its stack trace.
+     */
     public String xcpt2str(Throwable t) {
         StackTraceElement[] elements = t.getStackTrace();
         StringBuilder sb = new StringBuilder(t.toString()).append('\n');
