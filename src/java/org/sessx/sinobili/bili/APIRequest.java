@@ -1,6 +1,7 @@
 package org.sessx.sinobili.bili;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.StringJoiner;
 
 import org.sessx.sinobili.Main;
@@ -64,16 +65,37 @@ public class APIRequest {
     }
 
     /**
+     * Send a POST request to the specified URL with the specified parameters, headers,
+     * and data.
+     * 
+     * @param url     The URL to send the request to.
+     * @param params  The parameters to send with the request.
+     * @param data    The data to send with the request.
+     * @param headers The headers to send with the request.
+     * @return The response from the server as a {@code JsonElement}.
+     */
+    public static JsonElement post(String url, JsonObject params, JsonObject headers, byte[] data) {
+        return sendRequest("POST", url, params, headers, data);
+    }
+
+    /**
      * Send a POST request to the specified URL with the specified parameters and
-     * data.
+     * form data.
      * 
      * @param url    The URL to send the request to.
      * @param params The parameters to send with the request.
-     * @param data   The data to send with the request.
+     * @param form   The form data to send with the request.
      * @return The response from the server as a {@code JsonElement}.
      */
-    public static JsonElement post(String url, JsonObject params, byte[] data) {
-        return sendRequest("POST", url, params, new JsonObject(), data);
+    public static JsonElement post(String url, JsonObject params, JsonObject form, boolean retry) {
+        JsonObject headers = new JsonObject();
+        headers.addProperty("Content-Type", "application/x-www-form-urlencoded");
+        StringJoiner sj = new StringJoiner("&");
+        for (String key : form.keySet()) {
+            sj.add(key + "=" + HttpClient.get().encode(form.get(key).getAsString()));
+        }
+        Main.logger().log(0, "Form data: " + sj);
+        return sendRequest("POST", url, params, headers, sj.toString().getBytes(StandardCharsets.UTF_8), retry);
     }
 
     /**
@@ -87,13 +109,29 @@ public class APIRequest {
      * @param data    The data to send with the request.
      * @return The response from the server as a {@code JsonElement}.
      */
+    private static JsonElement sendRequest(String method, String url, JsonObject params, JsonObject headers, byte[] data) {
+        return sendRequest(method, url, params, headers, data, true);
+    }
+
+    /**
+     * Send a request to the specified URL with the specified parameters, headers,
+     * data and retry option.
+     * 
+     * @param method  The HTTP method to use for the request.
+     * @param url     The URL to send the request to.
+     * @param params  The parameters to send with the request.
+     * @param headers The headers to send with the request.
+     * @param data    The data to send with the request.
+     * @param retry   Whether to retry the request if it fails.
+     * @return The response from the server as a {@code JsonElement}.
+     */
     private static JsonElement sendRequest(String method, String url, JsonObject params, JsonObject headers,
-            byte[] data) {
+            byte[] data, boolean retry) {
         // request
         String url0 = buildurl(url, params);
         // response
         JsonElement response = null;
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < (retry ? 3 : 1); i++) {
             Main.logger().log(0, method + " " + url0);
             if (i > 0) {
                 Main.logger().log(1, "Retrying... (" + (i + 1) + "/3)");
@@ -113,15 +151,17 @@ public class APIRequest {
                 }
             }
         }
+        // check control
+        if (!retry) return response;
         // code
-        int code = response.getAsJsonObject().get("code").getAsShort();
+        int code = response.getAsJsonObject().get("code").getAsInt();
         if (code != 0 && !(code == -101 && url.equals(BiliSign.API_NAV_URL))) {
             String message = response.getAsJsonObject().get("message").getAsString();
             Main.logger().log(0, response.toString());
             throw new BiliException(code + " " + message + ": " + url);
         }
         // return
-        return response.getAsJsonObject();
+        return response;
     }
 
     private static JsonObject getCookies(String url) {
