@@ -88,11 +88,7 @@ public class Logger {
             String result = String.format("%s[%s %s][%s.%s:%d] %s\033[0m",
                     COLORS[level], time, LEVELS[level], className, methodName, lineNum, line);
             // print
-            if (level > 2) {
-                System.err.println(result);
-            } else {
-                System.out.println(result);
-            }
+            Main.printAbove(result);
             // write
             try {
                 this.out.write(result);

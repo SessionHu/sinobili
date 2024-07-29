@@ -1,10 +1,12 @@
 package org.sessx.sinobili;
 
 import java.io.File;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.StringJoiner;
 
 import org.jline.reader.LineReader;
 import org.jline.reader.LineReaderBuilder;
@@ -14,6 +16,8 @@ import org.sessx.sinobili.bili.BiliSign;
 import org.sessx.sinobili.bili.Video;
 import org.sessx.sinobili.util.Logger;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 /**
@@ -53,6 +57,16 @@ public class Main {
         logger().log(1, str);
     }
 
+    private static LineReader lineReader;
+
+    public static void printAbove(String str) {
+        if (lineReader == null) {
+            System.out.println(str);
+        } else {
+            lineReader.printAbove(str + '\n');
+        }
+    }
+
     /**
      * main method
      * 
@@ -64,13 +78,13 @@ public class Main {
         try {
             // init terminal
             Terminal terminal = TerminalBuilder.builder().system(true).build();
-            LineReader reader = LineReaderBuilder.builder().terminal(terminal).build();
+            lineReader = LineReaderBuilder.builder().terminal(terminal).build();
             String line;
             // loop
             while (true) {
                 // read line
                 try {
-                    line = reader.readLine("SinoBili> ");
+                    line = lineReader.readLine("SinoBili> ");
                 } catch (org.jline.reader.EndOfFileException e) {
                     // ^D
                     line = "exit";
@@ -81,7 +95,11 @@ public class Main {
                 // parse
                 String[] tokens = line.split("\\s+");
                 if (tokens.length == 2 && tokens[0].equals("video")) {
-                    logger().log(1, basicVideoInfo(tokens[1]));
+                    try {
+                        logger().log(1, basicVideoInfo(tokens[1]));
+                    } catch (Exception e) {
+                        logger().log(3, logger().xcpt2str(e));
+                    }
                 } else if (tokens.length == 1 && tokens[0].equals("wbi")) {
                     BiliSign.clearMixinKeyCache();
                     BiliSign.wbiSign(new JsonObject());
@@ -131,6 +149,11 @@ public class Main {
         // aid / bvid
         sb.append("AV").append(videoData.get("aid").getAsLong()).append(" / ");
         sb.append(videoData.get("bvid").getAsString()).append('\n');
+        // duration
+        Duration duration = Duration.ofSeconds(videoData.get("duration").getAsLong());
+        sb.append("时长 ");
+        if (duration.toHours() > 0) sb.append(duration.toHours()).append(':');
+        sb.append(String.format("%02d:%02d  ", duration.toMinutes() % 60, duration.getSeconds() % 60));
         // view danmaku pubdate
         JsonObject stat = videoData.get("stat").getAsJsonObject();
         sb.append("播放 ").append(stat.get("view").getAsLong()).append("  ");
@@ -138,6 +161,26 @@ public class Main {
         OffsetDateTime pubdate = OffsetDateTime.ofInstant(
                 Instant.ofEpochSecond(videoData.get("pubdate").getAsLong()), ZoneOffset.systemDefault());
         sb.append(pubdate.format(DateTimeFormatter.ISO_DATE_TIME)).append('\n');
+        // cover
+        sb.append("封面 ").append(videoData.get("pic").getAsString()).append('\n');
+        // like coin fav share reply
+        sb.append("点赞 ").append(stat.get("like").getAsLong()).append("  ");
+        sb.append("投币 ").append(stat.get("coin").getAsLong()).append("  ");
+        sb.append("收藏 ").append(stat.get("favorite").getAsLong()).append("  ");
+        sb.append("分享 ").append(stat.get("share").getAsLong()).append("  ");
+        sb.append("评论 ").append(stat.get("reply").getAsLong()).append('\n');
+        // tag
+        JsonArray tags = video.getTags();
+        if (tags.size() > 0) {
+            StringJoiner sj = new StringJoiner(" ", "Tags ", "\n");
+            for (JsonElement elem : tags) {
+                sj.add(elem.getAsJsonObject().get("tag_name").getAsString());
+            }
+            sb.append(sj);
+        }
+        // desc
+        String desc = videoData.get("desc").getAsString();
+        if (!desc.isEmpty()) sb.append(desc).append('\n');
         // return
         return sb.toString();
     }

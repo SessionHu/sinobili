@@ -3,6 +3,7 @@ package org.sessx.sinobili.bili;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.annotations.SerializedName;
@@ -10,6 +11,7 @@ import com.google.gson.annotations.SerializedName;
 /**
  * A Bilibili video object.
  * @see https://github.com/SocialSisterYi/bilibili-API-collect/blob/master/docs/video/info.md
+ * @see https://github.com/SocialSisterYi/bilibili-API-collect/blob/master/docs/video/tags.md
  */
 public class Video {
 
@@ -27,7 +29,7 @@ public class Video {
 
     private Video() {}
 
-    public static final String API_VIEW_URL = "https://api.bilibili.com/x/web-interface/view";
+    public static final String API_VIEW_URL = "https://api.bilibili.com/x/web-interface/wbi/view";
 
     public static Video fromAid(long aid) {
         JsonObject params = new JsonObject();
@@ -98,6 +100,19 @@ public class Video {
      */
     public static String tidSubToMain(short tid) {
         return ZONE.getOrDefault(tid, String.valueOf(tid));
+    }
+
+    private JsonArray tags;
+
+    public static final String API_TAG_URL = "https://api.bilibili.com/x/tag/archive/tags";
+
+    public JsonArray getTags() {
+        if (this.tags != null) return this.tags;
+        JsonObject params = new JsonObject();
+        params.addProperty("aid", this.data.get("aid").getAsLong());
+        params.addProperty("bvid", this.data.get("bvid").getAsString());
+        JsonObject json = APIRequest.get(API_TAG_URL, params).getAsJsonObject();
+        return this.tags = json.get("data").getAsJsonArray();
     }
 
 }
