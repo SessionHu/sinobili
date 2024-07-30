@@ -81,7 +81,7 @@ public class Main {
      */
     public static void main(String[] args) {
         // welcome
-        logger().log(1, "Welcome to SinoBili!");
+        logger().log(1, "Welcome to SinoBili!\nEnter 'help' to get help.");
         try {
             // init terminal
             Terminal terminal = TerminalBuilder.builder().system(true).build();
@@ -117,6 +117,7 @@ public class Main {
                     logger().log(1, "bili ticket: " + ticket);
                 } else if (tokens.length >= 1 && tokens[0].equals("netdisk")) {
                     if (tokens.length > 2) {
+                        BiliSign.clearBiliTicketCache();
                         StringBuilder sb = new StringBuilder();
                         for (int i = 2; i < tokens.length; i++) {
                             sb.append(tokens[i]).append("; ");
