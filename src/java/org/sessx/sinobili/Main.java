@@ -13,6 +13,7 @@ import org.jline.reader.LineReaderBuilder;
 import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
 import org.sessx.sinobili.bili.BiliSign;
+import org.sessx.sinobili.bili.Uploader;
 import org.sessx.sinobili.bili.Video;
 import org.sessx.sinobili.util.Logger;
 
@@ -48,12 +49,14 @@ public class Main {
     private static void printHelp() {
         String str = 
                 "avaliable commands:\n" +
-                "  video <aid | bvid> - get video info\n" +
-                "  wbi                - update wbi sign keys\n" +
-                "  biliticket [csrf]  - get bili ticket, 'csrf' is optional\n" +
-                "  clear              - clear screen\n" +
-                "  help               - show help\n" +
-                "  exit               - exit program\n";
+                "  video <aid | bvid>        - get video info\n" +
+                "  wbi                       - update wbi sign keys\n" +
+                "  biliticket [csrf]         - get bili ticket, 'csrf' is optional\n" +
+                "  netdisk <file> <cookies>  - upload file to Bilibili as netdisk\n" +
+                "  sharelink <link>          - download file from SSB share link\n" +
+                "  clear                     - clear screen\n" +
+                "  help                      - show help\n" +
+                "  exit                      - exit program\n";
         logger().log(1, str);
     }
 
@@ -65,6 +68,10 @@ public class Main {
         } else {
             lineReader.printAbove(str + '\n');
         }
+    }
+
+    public static boolean readYesOrNo() {
+        return lineReader.readLine(">> ").equalsIgnoreCase("y");
     }
 
     /**
@@ -108,6 +115,24 @@ public class Main {
                     String csrf = tokens.length == 2 ? tokens[1] : "";
                     String ticket = BiliSign.getBiliTicket(csrf);
                     logger().log(1, "bili ticket: " + ticket);
+                } else if (tokens.length >= 1 && tokens[0].equals("netdisk")) {
+                    if (tokens.length > 2) {
+                        StringBuilder sb = new StringBuilder();
+                        for (int i = 2; i < tokens.length; i++) {
+                            sb.append(tokens[i]).append("; ");
+                        }
+                        new Uploader(new File(tokens[1]), sb.toString()).upload();
+                    } else if (tokens.length == 2) {
+                        logger().log(2, "missing SESSDATA");
+                    } else {
+                        logger().log(2, "missing file path");
+                    }
+                } else if (tokens.length > 0 && tokens[0].equals("sharelink")) {
+                    if (tokens.length > 1) {
+                        Uploader.fromSharelink(tokens[1]);
+                    } else {
+                        logger().log(2, "missing share link");
+                    }
                 } else if (tokens.length == 1 && tokens[0].equals("clear")) {
                     terminal.puts(org.jline.utils.InfoCmp.Capability.clear_screen);
                 } else if (tokens.length == 1 && tokens[0].equals("help")) {

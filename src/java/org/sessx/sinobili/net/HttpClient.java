@@ -2,6 +2,7 @@ package org.sessx.sinobili.net;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.net.URLDecoder;
 import java.net.URLEncoder;
 
 import org.sessx.sinobili.Main;
@@ -49,6 +50,20 @@ public class HttpClient {
     public String encode(String str) {
         try {
             return URLEncoder.encode(str, "UTF-8");
+        } catch (java.io.UnsupportedEncodingException e) {
+            Main.logger().log(3, Main.logger().xcpt2str(e));
+            return str;
+        }
+    }
+
+    /**
+     * Decode a string from a URL format
+     * @param str the string to decode
+     * @return the decoded string
+     */
+    public String decode(String str) {
+        try {
+            return URLDecoder.decode(str, "UTF-8");
         } catch (java.io.UnsupportedEncodingException e) {
             Main.logger().log(3, Main.logger().xcpt2str(e));
             return str;

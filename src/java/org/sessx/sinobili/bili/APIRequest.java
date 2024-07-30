@@ -16,7 +16,7 @@ import com.google.gson.JsonObject;
  */
 public class APIRequest {
 
-    private static String buildurl(String url, JsonObject params) {
+    protected static String buildurl(String url, JsonObject params) {
         // check
         if (params.isEmpty()) return url;
         // wbi
@@ -70,7 +70,7 @@ public class APIRequest {
      * 
      * @param url     The URL to send the request to.
      * @param params  The parameters to send with the request.
-     * @param data    The data to send with the request.
+     * @param data    The data to send with the request, can be null.
      * @param headers The headers to send with the request.
      * @return The response from the server as a {@code JsonElement}.
      */
@@ -154,6 +154,7 @@ public class APIRequest {
         // check control
         if (!retry) return response;
         // code
+        if (!response.isJsonObject() || !response.getAsJsonObject().has("code")) return response;
         int code = response.getAsJsonObject().get("code").getAsInt();
         if (code != 0 && !(code == -101 && url.equals(BiliSign.API_NAV_URL))) {
             String message = response.getAsJsonObject().get("message").getAsString();
@@ -166,6 +167,9 @@ public class APIRequest {
 
     private static JsonObject getCookies(String url) {
         JsonObject cookies = BiliSign.DEFAULT_COOKIES.deepCopy();
+        for (String key : LOCAL_COOKIES.keySet()) {
+            cookies.addProperty(key, LOCAL_COOKIES.get(key).getAsString());
+        }
         if (!url.equals(BiliSign.API_GEN_WEB_TICKET)) {
             String csrf = cookies.get("bili_jct") == null ? "" : cookies.get("bili_jct").getAsString();
             cookies.addProperty("bili_ticket", BiliSign.getBiliTicket(csrf));
@@ -173,5 +177,7 @@ public class APIRequest {
         Main.logger().log(0, "Cookies: " + cookies.toString());
         return cookies;
     }
+
+    protected static final JsonObject LOCAL_COOKIES = new JsonObject();
 
 }

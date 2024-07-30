@@ -2,6 +2,7 @@ package org.sessx.sinobili.bili;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.util.Base64;
 import java.util.StringJoiner;
 
 import javax.crypto.Mac;
@@ -144,7 +145,7 @@ public class BiliSign {
      * @param bytes
      * @return The hex string representation of the given byte array.
      */
-    private static String bytesToHex(byte[] bytes) {
+    public static String bytesToHex(byte[] bytes) {
         StringBuilder sb = new StringBuilder();
         for (byte b : bytes) {
             String hex = Integer.toHexString(0xff & b);
@@ -197,6 +198,14 @@ public class BiliSign {
         biliTicketCache = null;
         biliTicketCacheTimeMillis = 0;
         biliCsrfCache = null;
+    }
+
+    public static String bytesToBase64(byte[] bytes) {
+        return new String(Base64.getEncoder().encode(bytes), StandardCharsets.UTF_8);
+    }
+
+    public static byte[] base64ToBytes(String base64) {
+        return Base64.getDecoder().decode(base64.getBytes(StandardCharsets.UTF_8));
     }
 
 }

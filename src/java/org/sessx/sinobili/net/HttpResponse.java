@@ -7,6 +7,7 @@ import java.net.HttpURLConnection;
 import java.nio.charset.StandardCharsets;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 
 public class HttpResponse {
@@ -18,13 +19,17 @@ public class HttpResponse {
         this.conn.connect();
     }
 
+    public InputStream getInputStream() throws IOException {
+        return this.conn.getInputStream();
+    }
+
     /**
      * Get the response body as a byte array.
      * @return the response body as a byte array.
      * @throws IOException if an I/O error occurs.
      */
     public byte[] bytes() throws IOException {
-        InputStream in = this.conn.getInputStream();
+        InputStream in = this.getInputStream();
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         int b;
         while ((b = in.read()) != -1) {
@@ -46,7 +51,7 @@ public class HttpResponse {
     /**
      * Default Gson instance for JSON parsing.
      */
-    public static Gson GSON = new Gson();
+    public static Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
     /**
      * Get the response body as a JSON element.

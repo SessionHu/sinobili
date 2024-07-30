@@ -44,7 +44,8 @@ public class HttpRequest {
     public HttpRequest cookie(JsonObject cookies) {
         StringJoiner joiner = new StringJoiner("; ");
         for (String key : cookies.keySet()) {
-            joiner.add(key + "=" + cookies.get(key).getAsString());
+            String value = cookies.get(key).getAsString();
+            joiner.add(key + "=" + HttpClient.get().encode(HttpClient.get().decode(value)));
         }
         this.conn.setRequestProperty("Cookie", joiner.toString());
         return this;
@@ -92,6 +93,17 @@ public class HttpRequest {
         this.conn.getOutputStream().write(data);
         this.conn.getOutputStream().flush();
         this.conn.getOutputStream().close();
+        return this;
+    }
+
+    /**
+     * Set the request timeout.
+     * @param timeout the timeout in milliseconds
+     * @return this
+     */
+    public HttpRequest timeout(int timeout) {
+        this.conn.setReadTimeout(timeout);
+        this.conn.setConnectTimeout(timeout);
         return this;
     }
 
