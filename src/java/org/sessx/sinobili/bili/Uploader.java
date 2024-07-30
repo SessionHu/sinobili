@@ -16,7 +16,6 @@ import org.sessx.sinobili.net.HttpClient;
 import org.sessx.sinobili.net.HttpRequest;
 import org.sessx.sinobili.net.HttpResponse;
 
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
