@@ -88,7 +88,7 @@ public class Logger {
             String result = String.format("%s[%s %s][%s.%s:%d] %s\033[0m",
                     COLORS[level], time, LEVELS[level], className, methodName, lineNum, line);
             // print
-            Main.printAbove(result);
+            if (level > 0) Main.printAbove(result);
             // write
             try {
                 this.out.write(result);

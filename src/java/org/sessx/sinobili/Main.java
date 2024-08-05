@@ -13,6 +13,7 @@ import org.jline.reader.LineReaderBuilder;
 import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
 import org.sessx.sinobili.bili.BiliSign;
+import org.sessx.sinobili.bili.Monitor;
 import org.sessx.sinobili.bili.Uploader;
 import org.sessx.sinobili.bili.Video;
 import org.sessx.sinobili.util.Logger;
@@ -50,6 +51,7 @@ public class Main {
         String str = 
                 "avaliable commands:\n" +
                 "  video <aid | bvid>        - get video info\n" +
+                "  videomonitor <aid> [tty]  - notice how the video data changed, can write to a tty\n" +
                 "  wbi                       - update wbi sign keys\n" +
                 "  biliticket [csrf]         - get bili ticket, 'csrf' is optional\n" +
                 "  netdisk <file> <cookies>  - upload file to Bilibili as netdisk\n" +
@@ -106,6 +108,12 @@ public class Main {
                         logger().log(1, basicVideoInfo(tokens[1]));
                     } catch (Exception e) {
                         logger().log(3, logger().xcpt2str(e));
+                    }
+                } else if (tokens.length >= 2 && tokens[0].equals("videomonitor")) {
+                    try {
+                        Monitor.video(Long.parseLong(tokens[1]), tokens.length > 2 ? tokens[2] : null);
+                    } catch (NumberFormatException e) {
+                        logger().log(2, "invaild aid " + tokens[1]);
                     }
                 } else if (tokens.length == 1 && tokens[0].equals("wbi")) {
                     BiliSign.clearMixinKeyCache();
