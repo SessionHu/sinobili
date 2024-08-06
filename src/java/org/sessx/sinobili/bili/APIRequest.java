@@ -19,10 +19,6 @@ public class APIRequest {
     protected static String buildurl(String url, JsonObject params) {
         // check
         if (params.isEmpty()) return url;
-        // wbi
-        if (url.contains("wbi")) {
-            BiliSign.wbiSign(params);
-        }
         // build
         StringJoiner sj = new StringJoiner("&", url + "?", "");
         for (String param : params.keySet()) {

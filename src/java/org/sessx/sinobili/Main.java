@@ -50,15 +50,16 @@ public class Main {
     private static void printHelp() {
         String str = 
                 "avaliable commands:\n" +
-                "  video <aid | bvid>        - get video info\n" +
-                "  videomonitor <aid> [tty]  - notice how the video data changed, can write to a tty\n" +
-                "  wbi                       - update wbi sign keys\n" +
-                "  biliticket [csrf]         - get bili ticket, 'csrf' is optional\n" +
-                "  netdisk <file> <cookies>  - upload file to Bilibili as netdisk\n" +
-                "  sharelink <link>          - download file from SSB share link\n" +
-                "  clear                     - clear screen\n" +
-                "  help                      - show help\n" +
-                "  exit                      - exit program\n";
+                "  video <aid | bvid>              - get video info\n" +
+                "  videomonitor <aid> [tty] [csv]  - notice how the video data changed, can write to a tty and csv file\n" +
+                "  stopall                         - stop all video monitors\n" +
+                "  wbi                             - update wbi sign keys\n" +
+                "  biliticket [csrf]               - get bili ticket, 'csrf' is optional\n" +
+                "  netdisk <file> <cookies>        - upload file to Bilibili as netdisk\n" +
+                "  sharelink <link>                - download file from SSB share link\n" +
+                "  clear                           - clear screen\n" +
+                "  help                            - show help\n" +
+                "  exit                            - exit program\n";
         logger().log(1, str);
     }
 
@@ -111,10 +112,15 @@ public class Main {
                     }
                 } else if (tokens.length >= 2 && tokens[0].equals("videomonitor")) {
                     try {
-                        Monitor.video(Long.parseLong(tokens[1]), tokens.length > 2 ? tokens[2] : null);
+                        long aid = Long.parseLong(tokens[1]);
+                        String tty = tokens.length > 2 ? tokens[2] : null;
+                        String csv = tokens.length > 3 ? tokens[3] : null;
+                        Monitor.video(aid, tty, csv);
                     } catch (NumberFormatException e) {
                         logger().log(2, "invaild aid " + tokens[1]);
                     }
+                } else if (tokens.length == 1 && tokens[0].equals("stopall")) {
+                    stopall = true;
                 } else if (tokens.length == 1 && tokens[0].equals("wbi")) {
                     BiliSign.clearMixinKeyCache();
                     BiliSign.wbiSign(new JsonObject());
@@ -147,6 +153,7 @@ public class Main {
                 } else if (tokens.length == 1 && tokens[0].equals("help")) {
                     printHelp();
                 } else if (tokens.length == 1 && tokens[0].equals("exit")) {
+                    stopall = true;
                     logger().log(1, "bye!");
                     break;
                 } else {
@@ -180,9 +187,10 @@ public class Main {
         JsonObject videoData = video.getData();
         // title
         sb.append(videoData.get("title").getAsString()).append('\n');
-        // aid / bvid
+        // aid / bvid / cid
         sb.append("AV").append(videoData.get("aid").getAsLong()).append(" / ");
-        sb.append(videoData.get("bvid").getAsString()).append('\n');
+        sb.append(videoData.get("bvid").getAsString()).append(" / ");
+        sb.append("CID").append(videoData.get("cid").getAsLong()).append('\n');
         // duration
         Duration duration = Duration.ofSeconds(videoData.get("duration").getAsLong());
         sb.append("时长 ");
@@ -207,6 +215,8 @@ public class Main {
         JsonArray tags = video.getTags();
         if (tags.size() > 0) {
             StringJoiner sj = new StringJoiner(" ", "Tags ", "\n");
+            sj.add(Video.tidSubToMain(videoData.get("tid").getAsShort()));
+            sj.add(videoData.get("tname").getAsString());
             for (JsonElement elem : tags) {
                 sj.add(elem.getAsJsonObject().get("tag_name").getAsString());
             }
@@ -218,5 +228,7 @@ public class Main {
         // return
         return sb.toString();
     }
+
+    public static volatile boolean stopall = false;
 
 }

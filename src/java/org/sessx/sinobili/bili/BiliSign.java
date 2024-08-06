@@ -70,6 +70,9 @@ public class BiliSign {
      * @return The signed request parameters.
      */
     public static JsonObject wbiSign(JsonObject params) {
+        // clear sign
+        params.remove("w_rid");
+        params.remove("wts");
         // mixin key
         String mixinKey = getMixinKey();
         // add timestamp

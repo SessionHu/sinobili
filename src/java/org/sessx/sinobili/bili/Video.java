@@ -34,7 +34,7 @@ public class Video {
     public static Video fromAid(long aid) {
         JsonObject params = new JsonObject();
         params.addProperty("aid", aid);
-        JsonElement element = APIRequest.get(API_VIEW_URL, params);
+        JsonElement element = APIRequest.get(API_VIEW_URL, BiliSign.wbiSign(params));
         Video video = new Video();
         video.data = element.getAsJsonObject().get("data").getAsJsonObject();
         return video;
@@ -43,7 +43,7 @@ public class Video {
     public static Video fromBvid(String bvid) {
         JsonObject params = new JsonObject();
         params.addProperty("bvid", bvid);
-        JsonElement element = APIRequest.get(API_VIEW_URL, params);
+        JsonElement element = APIRequest.get(API_VIEW_URL, BiliSign.wbiSign(params));
         Video video = new Video();
         video.data = element.getAsJsonObject().get("data").getAsJsonObject();
         return video;
