@@ -22,7 +22,7 @@ import com.google.gson.JsonObject;
 
 public class Uploader {
 
-    public Uploader(File file, String cookies) {
+    public Uploader(File file) {
         // check params
         if (!file.exists()) {
             Main.logger().log(2, file.getPath() + " does not exist!");
@@ -43,23 +43,6 @@ public class Uploader {
                 return;
             } else {
                 this.file = file;
-            }
-        }
-        if (cookies == null || (cookies = cookies.trim()).isEmpty()) {
-            Main.logger().log(2, "Cookies is empty!");
-            return;
-        }
-        // set cookies
-        String[] cookieParts = cookies.split(";\\s*");
-        for (String cookie : cookieParts) {
-            int index = cookie.indexOf("=");
-            if (index == -1) {
-                Main.logger().log(2, "Invalid cookie: " + cookie);
-                return;
-            } else {
-                String key = cookie.substring(0, index);
-                String value = cookie.substring(index + 1);
-                APIRequest.LOCAL_COOKIES.addProperty(key, value);
             }
         }
     }

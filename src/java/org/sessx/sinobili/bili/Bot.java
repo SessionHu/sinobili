@@ -19,7 +19,7 @@ public class Bot {
             params.addProperty("w_type", 3);
             params.addProperty("web_location", 1315873);
             JsonObject form = new JsonObject();
-            form.addProperty("mid", 0); // do not login here
+            form.addProperty("mid", APIRequest.getDedeUserID());
             form.addProperty("aid", aid);
             form.addProperty("cid", cid);
             form.addProperty("part", 1);
@@ -29,6 +29,7 @@ public class Bot {
             form.addProperty("outer", 0);
             form.addProperty("spmid", "333.788.0.0");
             form.addProperty("from_spmid", "");
+            form.addProperty("csrf", APIRequest.getCsrf());
             // loop
             while (!Main.stopall) {
                 params.addProperty("w_ftime", System.currentTimeMillis() / 1000L);
@@ -45,8 +46,8 @@ public class Bot {
                     Main.logger().log(2, "Request failed! Response: " + json.toString());
                 }
                 try {
-                    // sleep for [15, 60) s
-                    Thread.sleep((int) ((Math.random() * 45 + 15) * 1000));
+                    // sleep for [0, 120) s
+                    Thread.sleep((int) (Math.random() * 120 * 1000));
                 } catch (InterruptedException e) {
                     // do nothing...
                 }

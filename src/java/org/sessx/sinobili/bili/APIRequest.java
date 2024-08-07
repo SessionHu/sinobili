@@ -1,12 +1,18 @@
 package org.sessx.sinobili.bili;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.StringJoiner;
 
 import org.sessx.sinobili.Main;
 import org.sessx.sinobili.net.HttpClient;
 import org.sessx.sinobili.net.HttpRequest;
+import org.sessx.sinobili.net.HttpResponse;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -90,7 +96,7 @@ public class APIRequest {
         for (String key : form.keySet()) {
             sj.add(key + "=" + HttpClient.get().encode(form.get(key).getAsString()));
         }
-        Main.logger().log(0, "Form data: " + sj);
+        // Main.logger().log(0, "Form data: " + sj);
         return sendRequest("POST", url, params, headers, sj.toString().getBytes(StandardCharsets.UTF_8), retry);
     }
 
@@ -128,7 +134,7 @@ public class APIRequest {
         // response
         JsonElement response = null;
         for (int i = 0; i < (retry ? 3 : 1); i++) {
-            Main.logger().log(0, method + " " + url0);
+            // Main.logger().log(0, method + " " + url0);
             if (i > 0) {
                 Main.logger().log(1, "Retrying... (" + (i + 1) + "/3)");
             }
@@ -154,7 +160,7 @@ public class APIRequest {
         int code = response.getAsJsonObject().get("code").getAsInt();
         if (code != 0 && !(code == -101 && url.equals(BiliSign.API_NAV_URL))) {
             String message = response.getAsJsonObject().get("message").getAsString();
-            Main.logger().log(0, response.toString());
+            // Main.logger().log(0, response.toString());
             throw new BiliException(code + " " + message + ": " + url);
         }
         // return
@@ -170,10 +176,45 @@ public class APIRequest {
             String csrf = cookies.get("bili_jct") == null ? "" : cookies.get("bili_jct").getAsString();
             cookies.addProperty("bili_ticket", BiliSign.getBiliTicket(csrf));
         }
-        Main.logger().log(0, "Cookies: " + cookies.toString());
+        // Main.logger().log(0, "Cookies: " + cookies.toString());
         return cookies;
     }
 
-    protected static final JsonObject LOCAL_COOKIES = new JsonObject();
+    private static final JsonObject LOCAL_COOKIES = new JsonObject();
+
+    public static void login(String[] cookie) {
+        for (String c : cookie) {
+            String k, v;
+            k = HttpClient.get().decode(c.substring(0, c.indexOf("=")));
+            v = HttpClient.get().decode(c.substring(c.indexOf("=") + 1));
+            if (k.equals("SESSDATA") || k.equals("bili_jct") || k.equals("DedeUserID") || k.equals("DedeUserID__ckMd5")) {
+                LOCAL_COOKIES.addProperty(k, v);
+            }
+        }
+        BiliSign.clearBiliTicketCache();
+        try (OutputStream out = new FileOutputStream(Main.BASE_DIR + "/cookies.json")) {
+            out.write(LOCAL_COOKIES.toString().getBytes(StandardCharsets.UTF_8));
+        } catch (IOException e) {
+            Main.logger().log(2, "Failed to save cookies: " + e);
+        }
+        Main.logger().log(1, "Login success.");
+    }
+
+    public static void login(File file) throws IOException {
+        JsonObject fc = HttpResponse.GSON.fromJson(new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8), JsonObject.class);
+        for (String k : fc.keySet()) {
+            LOCAL_COOKIES.addProperty(k, fc.get(k).getAsString());
+        }
+        BiliSign.clearBiliTicketCache();
+        Main.logger().log(1, "Login success.");
+    }
+
+    public static String getCsrf() {
+        return LOCAL_COOKIES.get("bili_jct").getAsString();
+    }
+
+    public static String getDedeUserID() {
+        return LOCAL_COOKIES.get("DedeUserID").getAsString();
+    }
 
 }

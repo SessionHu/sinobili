@@ -19,9 +19,11 @@ public class Monitor {
             // open csv file
             Writer csvWriter = null;
             try {
-                OutputStream os = new FileOutputStream(csv);
-                csvWriter = new OutputStreamWriter(csv.endsWith("gz") ? new GZIPOutputStream(os) : os);
-                csvWriter.write("time,view,danmaku,like,coin,favorite,share,reply\n");
+                if (csv != null) {
+                    OutputStream os = new FileOutputStream(csv);
+                    csvWriter = new OutputStreamWriter(csv.endsWith("gz") ? new GZIPOutputStream(os) : os);
+                    csvWriter.write("time,view,danmaku,like,coin,favorite,share,reply\n");
+                }
             } catch (IOException e) {
                 Main.logger().log(2, Main.logger().xcpt2str(e));
             }
@@ -42,7 +44,11 @@ public class Monitor {
             while (!Main.stopall) {
                 // get latest stat
                 long newView, newDanmaku, newLike, newCoin, newFav, newShare, newReply;
-                stat = (video = Video.fromAid(aid)).getData().get("stat").getAsJsonObject();
+                try {
+                    stat = (video = Video.fromAid(aid)).getData().get("stat").getAsJsonObject();
+                } catch (RuntimeException e) {
+                    Main.logger().log(2, Main.logger().xcpt2str(e));
+                }
                 newView = stat.get("view").getAsLong();
                 newDanmaku = stat.get("danmaku").getAsLong();
                 newLike = stat.get("like").getAsLong();
@@ -90,7 +96,7 @@ public class Monitor {
                 if (csvWriter != null) {
                     try {
                         StringBuffer sb = new StringBuffer();
-                        sb.append(System.currentTimeMillis() - sleepTime).append(',');
+                        sb.append(System.currentTimeMillis()).append(',');
                         sb.append(newView).append(',');
                         sb.append(newDanmaku).append(',');
                         sb.append(newLike).append(',');

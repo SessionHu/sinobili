@@ -164,7 +164,6 @@ public class BiliSign {
 
     private static String biliTicketCache = null;
     private static long biliTicketCacheTimeMillis = 0;
-    private static String biliCsrfCache = null;
 
     /**
      * Get a Bilibili web ticket for the given CSRF token.
@@ -176,8 +175,7 @@ public class BiliSign {
      */
     public static String getBiliTicket(String csrf) {
         // cache (3 days)
-        if (biliTicketCache != null && System.currentTimeMillis() - biliTicketCacheTimeMillis < 259260000L
-                && (csrf == null || csrf.equals(biliCsrfCache))) {
+        if (biliTicketCache != null && System.currentTimeMillis() - biliTicketCacheTimeMillis < 259260000L) {
             return biliTicketCache;
         }
         // generate web ticket
@@ -192,7 +190,6 @@ public class BiliSign {
         // add cache
         biliTicketCacheTimeMillis = System.currentTimeMillis();
         biliTicketCache = response.get("data").getAsJsonObject().get("ticket").getAsString();
-        biliCsrfCache = csrf;
         // return
         return biliTicketCache;
     }
@@ -200,7 +197,6 @@ public class BiliSign {
     public static void clearBiliTicketCache() {
         biliTicketCache = null;
         biliTicketCacheTimeMillis = 0;
-        biliCsrfCache = null;
     }
 
     public static String bytesToBase64(byte[] bytes) {
