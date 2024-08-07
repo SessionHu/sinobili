@@ -122,7 +122,7 @@ public class Main {
                         }
                     } else if (tokens[0].equals("loginfile")) {
                         try {
-                            APIRequest.login(new File(BASE_DIR, "/cookie.json"));
+                            APIRequest.login(new File(BASE_DIR, "/cookies.json"));
                         } catch (IOException e) {
                             logger().log(3, "Failed to login with cookie file: " + e);
                         }
