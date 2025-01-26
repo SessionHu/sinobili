@@ -4,3 +4,8 @@
 # build
 dependency-reduced-pom.xml
 target/
+
+# lsp
+.classpath
+.project
+.settings/

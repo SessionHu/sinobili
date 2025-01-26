@@ -32,22 +32,21 @@ public class Main {
     /**
      * Base directory of SinoBili.
      */
-    public static final File BASE_DIR;
+    public static final File BASE_DIR = new File(System.getProperty("user.home") + "/.sessx/sinobili");
     static {
-        BASE_DIR = new File(System.getProperty("user.home") + "/.sessx/sinobili");
         BASE_DIR.mkdirs();
     }
 
-    private static Logger logger;
-    static {
-        logger = Logger.get();
-    }
+    private static Logger logger = Logger.get();
 
     public static Logger logger() {
         return logger;
     }
 
-    private Main() {} // no instance
+    private Main() {
+        // no instance
+        throw new UnsupportedOperationException();
+    }
 
     private static void printHelp() {
         String str = 
@@ -88,11 +87,12 @@ public class Main {
      * @param args command line arguments
      */
     public static void main(String[] args) {
-        // welcome
-        logger().log(1, "Welcome to SinoBili!\nEnter 'help' to get help.");
         try {
             // init terminal
             Terminal terminal = TerminalBuilder.builder().system(true).build();
+            // welcome
+            logger().log(1, "Welcome to SinoBili!\nEnter 'help' to get help.");
+            // reader
             lineReader = LineReaderBuilder.builder().terminal(terminal).build();
             String line;
             // loop
