@@ -19,13 +19,13 @@ exit                      - exit program
 
 您可以在 Releases 下载构建好的 JAR 文件，也可以自己编译
 
-请先确保至少安装了 GNU Make 与 JDK 8 或以上版本，然后运行以下命令
+请先确保至少安装了 Maven 与 JDK 8 或以上版本，然后运行以下命令
 
 ```shell
-make
+mvn package
 ```
 
-编译完成后，会在项目根目录下 `build` 目录生成 `sinobili.jar` 文件
+编译完成后，会在项目根目录下 `target` 目录生成 `sinobili-VERSION.jar` 文件
 
 ## 运行
 
