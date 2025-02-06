@@ -210,11 +210,21 @@ public class APIRequest {
     }
 
     public static String getCsrf() {
-        return LOCAL_COOKIES.get("bili_jct").getAsString();
+        JsonElement csrf = LOCAL_COOKIES.get("bili_jct");
+        if (csrf == null) {
+            Main.logger().log(2, "Not logged in, csrf is empty");
+            return "";
+        }
+        return csrf.getAsString();
     }
 
     public static String getDedeUserID() {
-        return LOCAL_COOKIES.get("DedeUserID").getAsString();
+        JsonElement mid =  LOCAL_COOKIES.get("DedeUserID");
+        if (mid == null) {
+            Main.logger().log(2, "Not logged in, DedeUserID is 0");
+            return "0";
+        }
+        return mid.getAsString();
     }
 
 }
