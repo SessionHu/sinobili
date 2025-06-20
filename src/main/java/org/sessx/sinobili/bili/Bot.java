@@ -38,12 +38,16 @@ public class Bot {
                 form.add("stime", params.get("w_stime"));
                 form.addProperty("start_ts", System.currentTimeMillis() / 1000L);
                 form.addProperty("session", UUID.randomUUID().toString().replace("-", ""));
-                JsonObject json = APIRequest.post(API_WEB_H5_VIEW, params, form, false).getAsJsonObject();
-                int code = json.get("code").getAsInt();
-                if (code == 0) {
-                    Main.logger().log(1, "Request sucessfully! Return 0");
-                } else {
-                    Main.logger().log(2, "Request failed! Response: " + json.toString());
+                try {
+                    JsonObject json = APIRequest.post(API_WEB_H5_VIEW, params, form, false).getAsJsonObject();
+                    int code = json.get("code").getAsInt();
+                    if (code == 0) {
+                        Main.logger().log(1, "Request sucessfully! Return 0");
+                    } else {
+                        Main.logger().log(2, "Request failed! Response: " + json.toString());
+                    }
+                } catch (RuntimeException e) {
+                    Main.logger().log(2, Main.logger().xcpt2str(e));
                 }
                 try {
                     // sleep for [0, 120) s
